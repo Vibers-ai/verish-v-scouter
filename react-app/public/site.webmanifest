@@ -1,0 +1,21 @@
+{
+  "name": "Verish",
+  "short_name": "Verish",
+  "description": "Influencer management and analytics platform",
+  "icons": [
+    {
+      "src": "/v-scouter_logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/verish_logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ],
+  "theme_color": "#1a1a1a",
+  "background_color": "#ffffff",
+  "display": "standalone",
+  "start_url": "/"
+}

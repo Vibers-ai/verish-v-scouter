@@ -1,0 +1,90 @@
+/* Search Section with shadcn Components */
+.search-section-shadcn {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.search-input-shadcn {
+  width: 100%;
+  height: 36px;
+  font-size: 0.8rem;
+  background: #f9fafb;
+  border-color: #e5e7eb;
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+.search-input-shadcn::placeholder {
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+
+.search-input-shadcn:focus {
+  border-color: #6b7280;
+  box-shadow: 0 0 0 2px rgba(156, 163, 175, 0.2);
+}
+
+.search-buttons-shadcn {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  width: 100%;
+}
+
+.search-buttons-shadcn .search-btn {
+  background: #1a1a1a;
+  border: 1px solid #1a1a1a;
+  color: white;
+  height: 32px;
+  font-size: 0.75rem;
+  padding: 0 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.search-buttons-shadcn .search-btn:hover {
+  background: #2a2a2a;
+  border-color: #2a2a2a;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.search-buttons-shadcn .clear-btn {
+  height: 32px;
+  font-size: 0.75rem;
+  padding: 0 8px;
+  background: white;
+  color: #6b7280;
+  border: 1px solid #e5e7eb;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.search-buttons-shadcn .clear-btn:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+  color: #111827;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* Override default button styles for compact sidebar */
+.sidebar .search-buttons-shadcn button {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Ensure icons are small and properly aligned */
+.search-buttons-shadcn svg {
+  flex-shrink: 0;
+  width: 14px !important;
+  height: 14px !important;
+  vertical-align: middle;
+  margin-top: -2px;
+}
