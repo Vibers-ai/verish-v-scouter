@@ -11,6 +11,9 @@ __pycache__/
 env/
 venv/
 .env
+package-lock.json
+
+*.terraform
 
 # IDE
 .vscode/

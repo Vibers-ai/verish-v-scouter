@@ -1,0 +1,13 @@
+{
+  "total": 563,
+  "processed": 5,
+  "images_downloaded": 5,
+  "images_uploaded": 5,
+  "db_inserted": 1,
+  "errors": [
+    "DB error for faithmary☽: {'message': 'duplicate key value violates unique constraint \"influencers_pkey\"', 'code': '23505', 'hint': None, 'details': None}",
+    "DB error for Shianna💋| NYC Content Creator: {'message': 'duplicate key value violates unique constraint \"influencers_pkey\"', 'code': '23505', 'hint': None, 'details': None}",
+    "DB error for kara ellease 😚: {'message': 'duplicate key value violates unique constraint \"influencers_pkey\"', 'code': '23505', 'hint': None, 'details': None}",
+    "DB error for Ryan🪬✨💅🏻: {'message': 'duplicate key value violates unique constraint \"influencers_pkey\"', 'code': '23505', 'hint': None, 'details': None}"
+  ]
+}
