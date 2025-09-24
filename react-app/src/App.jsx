@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { HelmetProvider } from 'react-helmet-async';
 import Header from './components/Header/Header';
 import InfluencerTabs from './components/Tabs/InfluencerTabs';
 import Sidebar from './components/Sidebar/Sidebar';
@@ -264,9 +263,8 @@ function App() {
   }, [loadData]);
 
   return (
-    <HelmetProvider>
-      <div className="app-layout">
-        {isLoading && <LoadingIndicator />}
+    <div className="app-layout">
+      {isLoading && <LoadingIndicator />}
 
         <Sidebar
           viewMode={viewMode}
@@ -386,8 +384,7 @@ function App() {
           {/* Migration Tool - Hidden after migration complete */}
           {/* <MigrationTool onMigrationComplete={() => loadData()} /> */}
         </div>
-      </div>
-    </HelmetProvider>
+    </div>
   );
 }
 
