@@ -38,6 +38,7 @@ export const TABLES = {
   TAGS: 'influencer_tags',
   CONTACT_STATUSES: 'contact_statuses',
   SUMMARY_VIEW: 'influencer_summary',
+  LIKES: 'influencer_likes',
 };
 
 export const CONTACT_STATUS_OPTIONS = {

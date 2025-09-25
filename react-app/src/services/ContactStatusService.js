@@ -1,5 +1,6 @@
 const ContactStatusService = {
   STATUSES: {
+    contact_request: { label: '연락 요청', color: '#eab308', bgColor: '#fef3c7' },
     none: { label: '미연락', color: '#6b7280', bgColor: '#f3f4f6' },
     contacted: { label: '연락했음', color: '#3b82f6', bgColor: '#dbeafe' },
     no_response: { label: '회신 안옴', color: '#f97316', bgColor: '#fed7aa' },

@@ -1,12 +1,22 @@
 import { create } from 'zustand';
 import { authUtils } from '../utils/authUtils';
+import { isDevelopment, MOCK_USERS } from '../config/mockUsers';
+
+// Get initial dev user from localStorage or use first mock user
+const getInitialDevUser = () => {
+  if (isDevelopment()) {
+    const savedDevUser = localStorage.getItem('dev_user');
+    return savedDevUser ? JSON.parse(savedDevUser) : MOCK_USERS[0];
+  }
+  return null;
+};
 
 const useAuthStore = create((set, get) => ({
   // State
-  user: authUtils.getUser(),
-  token: authUtils.getToken(),
+  user: isDevelopment() ? getInitialDevUser() : authUtils.getUser(),
+  token: isDevelopment() ? 'dev-token' : authUtils.getToken(),
   maestroUrl: authUtils.getMaestroUrl(),
-  isAuthenticated: authUtils.isAuthenticated(),
+  isAuthenticated: isDevelopment() ? true : authUtils.isAuthenticated(),
   isLoading: false,
   error: null,
 
@@ -104,6 +114,19 @@ const useAuthStore = create((set, get) => ({
 
   // Initialize auth state from localStorage
   initializeAuth: () => {
+    // In development, use saved dev user or default to first mock user
+    if (isDevelopment()) {
+      const savedDevUser = localStorage.getItem('dev_user');
+      const devUser = savedDevUser ? JSON.parse(savedDevUser) : MOCK_USERS[0];
+      set({
+        user: devUser,
+        token: 'dev-token',
+        maestroUrl: null,
+        isAuthenticated: true,
+      });
+      return true;
+    }
+
     const token = authUtils.getToken();
     const user = authUtils.getUser();
     const maestroUrl = authUtils.getMaestroUrl();
@@ -118,6 +141,16 @@ const useAuthStore = create((set, get) => ({
       return true;
     }
     return false;
+  },
+
+  // Development only: Set mock user
+  setDevUser: (mockUser) => {
+    if (isDevelopment()) {
+      set({
+        user: mockUser,
+        isAuthenticated: true,
+      });
+    }
   },
 }));
 

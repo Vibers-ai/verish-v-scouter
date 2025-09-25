@@ -1,4 +1,6 @@
 import { supabase, TABLES } from './supabase';
+import LikesService from './LikesService';
+import useAuthStore from '../stores/authStore';
 
 class InfluencerService {
   constructor() {
@@ -21,12 +23,50 @@ class InfluencerService {
       sortOrder = 'desc',
       includeTags = true,
       includeContactStatus = true,
+      includeLikes = true,
+      likedByUsers = [],
+      currentUserEmail = null,
     } = options;
 
     try {
-      let query = supabase
-        .from(TABLES.INFLUENCERS)
-        .select('*', { count: 'exact' });
+      // When saved=true, we need to get all influencers with likes
+      let query;
+      let influencersData = [];
+      let totalCount = 0;
+
+      if (saved === true) {
+        // Get all influencers that have been liked, with like counts
+        const { data: likedInfluencerIds, error: likeError } = await supabase
+          .from(TABLES.LIKES)
+          .select('influencer_id')
+          .order('influencer_id');
+
+        if (likeError) throw likeError;
+
+        // Get unique influencer IDs
+        const uniqueInfluencerIds = [...new Set(likedInfluencerIds.map(l => l.influencer_id))];
+
+        if (uniqueInfluencerIds.length === 0) {
+          return {
+            data: [],
+            count: 0,
+            page,
+            pageSize,
+            totalPages: 0,
+          };
+        }
+
+        // Get influencers that have likes
+        query = supabase
+          .from(TABLES.INFLUENCERS)
+          .select('*', { count: 'exact' })
+          .in('id', uniqueInfluencerIds);
+      } else {
+        // Normal query for all influencers
+        query = supabase
+          .from(TABLES.INFLUENCERS)
+          .select('*', { count: 'exact' });
+      }
 
       if (searchTerm) {
         const searchLower = searchTerm.toLowerCase();
@@ -41,11 +81,6 @@ class InfluencerService {
 
       if (status && status !== 'none') {
         query = query.eq('status', status);
-      }
-
-      if (saved !== null) {
-        console.log('Applying saved filter:', saved);
-        query = query.eq('saved', saved);
       }
 
       if (scrapingRound) {
@@ -72,33 +107,157 @@ class InfluencerService {
         query = query.or('email.is.null,email.eq.');
       }
 
-      if (sortField) {
-        query = query.order(sortField, { ascending: sortOrder === 'asc' });
-      } else if (saved === true) {
-        // When viewing saved influencers, sort by saved_at (most recently saved first)
-        query = query.order('saved_at', {
-          ascending: false,
-          nullsFirst: false,
-        });
-      } else {
-        query = query.order('id', { ascending: false });
+      // Don't apply sorting yet if saved=true, we'll sort by like count later
+      if (!saved) {
+        if (sortField) {
+          query = query.order(sortField, { ascending: sortOrder === 'asc' });
+        } else {
+          query = query.order('id', { ascending: false });
+        }
       }
 
-      const from = (page - 1) * pageSize;
-      const to = from + pageSize - 1;
-      query = query.range(from, to);
+      // For saved view, fetch all data first to sort by likes
+      let data, error, count;
+      let influencersWithExtras;
 
-      const { data, error, count } = await query;
+      if (saved === true) {
+        // Fetch all liked influencers without pagination first
+        const { data: allData, error: allError, count: allCount } = await query;
 
-      if (error) throw error;
+        if (allError) throw allError;
+
+        // Fetch likes data for all influencers
+        let likesData = {};
+        if (allData && allData.length > 0) {
+          const influencerIds = allData.map(i => i.id);
+          likesData = await LikesService.getBatchLikesData(influencerIds, currentUserEmail);
+        }
+
+        // Apply filter for liked by specific users if needed
+        let filteredData = allData;
+        if (likedByUsers && likedByUsers.length > 0) {
+          filteredData = allData.filter((influencer) => {
+            const likes = likesData[influencer.id];
+            if (!likes || !likes.users) return false;
+
+            // Check if any of the selected users have liked this influencer
+            return likes.users.some(user =>
+              likedByUsers.includes(user.email)
+            );
+          });
+        }
+
+        // Add like count to each influencer and sort by it
+        const dataWithLikeCounts = filteredData.map(influencer => ({
+          ...influencer,
+          like_count: likesData[influencer.id]?.users?.length || 0,
+          likes: likesData[influencer.id] || { users: [], isLikedByCurrentUser: false }
+        }));
+
+        // Sort by like count (most liked first) or by specified field
+        if (sortField === 'like_count' || !sortField) {
+          dataWithLikeCounts.sort((a, b) => b.like_count - a.like_count);
+        } else if (sortField) {
+          dataWithLikeCounts.sort((a, b) => {
+            const aVal = a[sortField];
+            const bVal = b[sortField];
+            if (sortOrder === 'asc') {
+              return aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
+            } else {
+              return aVal > bVal ? -1 : aVal < bVal ? 1 : 0;
+            }
+          });
+        }
+
+        // Apply pagination after sorting
+        const from = (page - 1) * pageSize;
+        const to = from + pageSize;
+        data = dataWithLikeCounts.slice(from, to);
+        count = filteredData.length;
+        error = null;
+
+        // likesData is already attached to data
+        influencersWithExtras = data;
+      } else {
+        // Normal pagination and data fetching
+        const from = (page - 1) * pageSize;
+        const to = from + pageSize - 1;
+        query = query.range(from, to);
+
+        const result = await query;
+        data = result.data;
+        error = result.error;
+        count = result.count;
+
+        if (error) throw error;
+
+        influencersWithExtras = data;
+
+        // Fetch likes data in batch if needed
+        let likesData = {};
+        if (includeLikes && influencersWithExtras.length > 0) {
+          const influencerIds = influencersWithExtras.map(i => i.id);
+          likesData = await LikesService.getBatchLikesData(influencerIds, currentUserEmail);
+        }
+
+        // Apply filter for liked by specific users
+        if (likedByUsers && likedByUsers.length > 0) {
+          influencersWithExtras = influencersWithExtras.filter((influencer) => {
+            const likes = likesData[influencer.id];
+            if (!likes || !likes.users) return false;
+
+            // Check if any of the selected users have liked this influencer
+            return likes.users.some(user =>
+              likedByUsers.includes(user.email)
+            );
+          });
+        }
+      }
 
       console.log(
         `Query returned ${count} total results, ${data.length} on this page. Saved filter: ${saved}`
       );
 
-      let influencersWithExtras = data;
+      // For non-saved views, we still need to attach likes data if not already done
+      if (!saved && (includeTags || includeContactStatus || includeLikes)) {
+        influencersWithExtras = await Promise.all(
+          influencersWithExtras.map(async (influencer) => {
+            const extras = { ...influencer };
 
-      if (includeTags || includeContactStatus) {
+            if (includeTags) {
+              const tags = await this.getInfluencerTags(influencer.id);
+              extras.tags = tags;
+            }
+
+            if (includeContactStatus) {
+              const contactStatus = await this.getInfluencerContactStatus(
+                influencer.id
+              );
+              extras.contact_status = contactStatus;
+            }
+
+            if (includeLikes && !influencer.likes) {
+              // Fetch likes data for this specific influencer if not already present
+              const likesForInfluencer = await LikesService.getLikedBy(influencer.id);
+              const isLikedByCurrentUser = currentUserEmail ?
+                likesForInfluencer.some(like => like.user_email === currentUserEmail) : false;
+              extras.likes = {
+                users: likesForInfluencer.map(like => ({
+                  email: like.user_email,
+                  name: like.user_name,
+                  created_at: like.created_at
+                })),
+                isLikedByCurrentUser
+              };
+            } else if (influencer.likes) {
+              extras.likes = influencer.likes;
+            }
+
+            return extras;
+          })
+        );
+      } else if (saved && (includeTags || includeContactStatus)) {
+        // For saved view, likes are already attached, just add tags and contact status if needed
         influencersWithExtras = await Promise.all(
           influencersWithExtras.map(async (influencer) => {
             const extras = { ...influencer };

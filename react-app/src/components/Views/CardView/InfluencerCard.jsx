@@ -1,13 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FaHeart, FaRegHeart } from 'react-icons/fa';
 import StatusSelector from '../../common/StatusSelector';
 import ContactStatusService from '../../../services/ContactStatusService';
-import InfluencerService from '../../../services/InfluencerService';
+import LikesService from '../../../services/LikesService';
+import useAuthStore from '../../../stores/authStore';
 import { truncateText, formatNumber } from '../../../utils/formatters';
+import { getUserColor } from '../../../utils/userColors';
 
 function InfluencerCard({ influencer, onShowDetail, onShowVideo, onDataUpdate }) {
-  const [isSaved, setIsSaved] = useState(influencer.saved || false);
+  const { user } = useAuthStore();
+  const [isLiked, setIsLiked] = useState(
+    influencer.likes?.isLikedByCurrentUser || false
+  );
+  const [likedByUsers, setLikedByUsers] = useState(
+    influencer.likes?.users || []
+  );
   const [isSaving, setIsSaving] = useState(false);
+
+  // Update like state when influencer data changes (e.g., when user changes)
+  useEffect(() => {
+    setIsLiked(influencer.likes?.isLikedByCurrentUser || false);
+    setLikedByUsers(influencer.likes?.users || []);
+  }, [influencer.likes]);
   const handleCopyEmail = (email, event) => {
     event.stopPropagation();
 
@@ -55,22 +69,58 @@ function InfluencerCard({ influencer, onShowDetail, onShowVideo, onDataUpdate })
     onShowVideo(url);
   };
 
-  const handleToggleSaved = async (event) => {
+  const handleToggleLike = async (event) => {
     event.stopPropagation();
-    if (isSaving) return;
+    if (isSaving || !user) return;
 
     try {
       setIsSaving(true);
-      await InfluencerService.toggleSaved(influencer.id);
-      setIsSaved(!isSaved);
+      const result = await LikesService.toggleUserLike(
+        influencer.id,
+        user.email,
+        user.name,
+        user.id
+      );
+
+      if (result.liked) {
+        // Add current user to the liked list
+        setLikedByUsers((prev) => [
+          { email: user.email, name: user.name },
+          ...prev,
+        ]);
+        setIsLiked(true);
+      } else {
+        // Remove current user from the liked list
+        setLikedByUsers((prev) =>
+          prev.filter((u) => u.email !== user.email)
+        );
+        setIsLiked(false);
+      }
+
       onDataUpdate();
     } catch (error) {
-      console.error('Failed to toggle saved status:', error);
-      alert('저장 상태 변경 실패');
+      console.error('Failed to toggle like status:', error);
+      alert('좋아요 상태 변경 실패');
     } finally {
       setIsSaving(false);
     }
   };
+
+  // Helper to get last 2 characters from name
+  const getInitials = (name) => {
+    if (!name) return '??';
+    // Remove spaces and get last 2 characters
+    const cleanName = name.replace(/\s/g, '');
+    if (cleanName.length >= 2) {
+      return cleanName.substring(cleanName.length - 2).toUpperCase();
+    }
+    return cleanName.toUpperCase().padStart(2, '?');
+  };
+
+
+  // Show max 3 users who liked
+  const displayUsers = likedByUsers.slice(0, 3);
+  const remainingCount = likedByUsers.length - 3;
 
   const currentStatus = ContactStatusService.getStatus(influencer.id);
 
@@ -109,17 +159,53 @@ function InfluencerCard({ influencer, onShowDetail, onShowVideo, onDataUpdate })
           </a>
         )}
         <button
-          className={`like-btn ${isSaved ? 'liked' : ''} ${isSaving ? 'saving' : ''}`}
-          onClick={handleToggleSaved}
-          title={isSaved ? '좋아요 취소' : '좋아요'}
-          disabled={isSaving}
+          className={`like-btn ${isLiked ? 'liked' : ''} ${isSaving ? 'saving' : ''}`}
+          onClick={handleToggleLike}
+          title={isLiked ? '좋아요 취소' : '좋아요'}
+          disabled={isSaving || !user}
         >
-          {isSaved ? (
-            <FaHeart size={20} color="#ef4444" />
+          {isLiked ? (
+            <FaHeart size={30} color="#ef4444" />
           ) : (
-            <FaRegHeart size={20} color="#6b7280" />
+            <FaRegHeart size={30} color="#6b7280" />
           )}
         </button>
+
+        {/* Display users who liked */}
+        {likedByUsers.length > 0 && (
+          <div className="liked-by-users">
+            {displayUsers.map((likedUser, index) => {
+              const color = getUserColor(likedUser.email);
+              return (
+                <div
+                  key={likedUser.email}
+                  className="user-avatar"
+                  title={`${likedUser.name || likedUser.email}`}
+                  style={{
+                    zIndex: displayUsers.length - index, // Higher z-index for items closer to heart (right side)
+                    right: `${index * 28}px`, // Use right positioning instead of left
+                    backgroundColor: color.fill,
+                    borderColor: color.stroke,
+                  }}
+                >
+                  {getInitials(likedUser.name)}
+                </div>
+              );
+            })}
+            {remainingCount > 0 && (
+              <div
+                className="user-avatar more-users"
+                title={`${remainingCount}명 더`}
+                style={{
+                  zIndex: 0, // Lowest z-index for the "+N" indicator (leftmost)
+                  right: `${displayUsers.length * 28}px`
+                }}
+              >
+                +{remainingCount}
+              </div>
+            )}
+          </div>
+        )}
       </div>
       <div className="card-content">
         <div className="card-header">

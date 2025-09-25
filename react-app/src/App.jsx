@@ -9,9 +9,15 @@ import DetailModal from './components/Modals/DetailModal';
 import VideoModal from './components/Modals/VideoModal';
 import LoadingIndicator from './components/common/LoadingIndicator';
 import MigrationTool from './components/MigrationTool/MigrationTool';
+import DevUserSelector from './components/DevUserSelector';
+import LikedByFilter from './components/Controls/LikedByFilter';
 import TagsService from './services/TagsService';
 import ContactStatusService from './services/ContactStatusService';
 import InfluencerService from './services/InfluencerService';
+import LikesService from './services/LikesService';
+import useAuthStore from './stores/authStore';
+import { isDevelopment } from './config/mockUsers';
+import { assignColorsToUsers } from './utils/userColors';
 import { VIEW_MODES, INFLUENCER_TYPES, SORT_ORDERS } from './utils/constants';
 
 function App() {
@@ -34,8 +40,12 @@ function App() {
   const [currentEmailFilter, setCurrentEmailFilter] = useState('');
   const [scrapingRoundFilter, setScrapingRoundFilter] = useState('');
   const [availableRounds, setAvailableRounds] = useState([]);
+  const [likedByUsers, setLikedByUsers] = useState([]);
   const [sortField, setSortField] = useState('');
   const [sortOrder, setSortOrder] = useState(SORT_ORDERS.DESC);
+
+  // Get current user from auth store
+  const { user } = useAuthStore();
 
   // View states
   const [currentView, setCurrentView] = useState(VIEW_MODES.CARD);
@@ -93,7 +103,10 @@ function App() {
         scrapingRound: scrapingRoundFilter || null,
         saved: viewMode === 'saved' ? true : null,
         includeTags: true,
-        includeContactStatus: true
+        includeContactStatus: true,
+        includeLikes: true,
+        likedByUsers: likedByUsers,
+        currentUserEmail: user?.email
       };
 
       console.log('Loading data with viewMode:', viewMode, 'saved filter:', viewMode === 'saved' ? true : null);
@@ -110,6 +123,10 @@ function App() {
       setTotalCount(result.count);
       setSummaryData(summaries);
 
+      // Assign colors to all users who have liked any influencer
+      const allLikedUsers = await LikesService.getAllUsersWhoLiked();
+      assignColorsToUsers(allLikedUsers);
+
       // Store all available rounds
       if (allRoundsResult && allRoundsResult.length > 0) {
         console.log('Setting available rounds:', allRoundsResult);
@@ -125,7 +142,7 @@ function App() {
       alert('데이터를 불러오는 중 오류가 발생했습니다.');
     }
   }, [currentPage, itemsPerPage, sortField, sortOrder, searchTerm, currentTypeFilter,
-      followerRange, viewsRange, currentEmailFilter, scrapingRoundFilter, viewMode]);
+      followerRange, viewsRange, currentEmailFilter, scrapingRoundFilter, viewMode, likedByUsers, user]);
 
   // Since all filtering and sorting is done server-side,
   // we can directly use the allData
@@ -262,9 +279,16 @@ function App() {
     loadData();
   }, [loadData]);
 
+  // Handle dev user change
+  const handleDevUserChange = useCallback(() => {
+    // Force data reload with new user context
+    loadData();
+  }, [loadData]);
+
   return (
     <div className="app-layout">
       {isLoading && <LoadingIndicator />}
+      {isDevelopment() && <DevUserSelector onUserChange={handleDevUserChange} />}
 
         <Sidebar
           viewMode={viewMode}
@@ -306,6 +330,15 @@ function App() {
             </span>
 
             <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+              {viewMode === 'saved' && (
+                <div className="liked-by-filter-inline">
+                  <LikedByFilter
+                    selectedUsers={likedByUsers}
+                    onUsersChange={setLikedByUsers}
+                  />
+                </div>
+              )}
+
               <div className="items-per-page">
                 <label>페이지당:</label>
                 <select

@@ -1369,10 +1369,10 @@ main {
     bottom: 12px;
     right: 12px;
     background: rgba(255, 255, 255, 0.95);
-    border: 2px solid #e5e7eb;
+    border: 1px solid #e5e7eb;
     border-radius: 50%;
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -1396,10 +1396,10 @@ main {
 .influencer-card .like-btn svg {
     display: block !important;
     pointer-events: none;
-    width: 20px !important;
-    height: 20px !important;
-    min-width: 20px !important;
-    min-height: 20px !important;
+    width: 24px !important;
+    height: 24px !important;
+    min-width: 24px !important;
+    min-height: 24px !important;
     flex-shrink: 0;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -1411,6 +1411,7 @@ main {
 .influencer-card .like-btn.liked {
     background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
     border-color: #fca5a5;
+    border-width: 1px;
     box-shadow: 0 2px 12px rgba(239, 68, 68, 0.2);
 }
 
@@ -1428,6 +1429,47 @@ main {
     opacity: 0.6;
     cursor: not-allowed;
     transform: scale(1) !important;
+}
+
+/* Liked by users display */
+.liked-by-users {
+    position: absolute;
+    bottom: 12px;
+    right: 60px; /* Position to the left of the heart button (40px heart + 12px gap + 8px) */
+    display: flex;
+    align-items: center;
+    height: 40px;
+    flex-direction: row-reverse; /* Reverse direction so avatars stack from right to left */
+}
+
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    border-width: 1px;
+    border-style: solid;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 600;
+    position: absolute;
+    transition: transform 0.2s;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.user-avatar:hover {
+    transform: scale(1.1);
+    z-index: 10 !important;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.user-avatar.more-users {
+    background: #8B3A3A;
+    border-color: #6B2929;
+    font-size: 12px;
 }
 
 @keyframes heartbeat {
