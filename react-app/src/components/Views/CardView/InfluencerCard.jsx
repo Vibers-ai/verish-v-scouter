@@ -131,8 +131,8 @@ function InfluencerCard({ influencer, onShowDetail, onShowVideo, onDataUpdate })
         onClick={(e) => influencer.video_url && handleShowVideo(influencer.video_url, e)}
         style={{ cursor: influencer.video_url ? 'pointer' : 'default', position: 'relative' }}
       >
-        {(influencer.scraping_round === '3' || influencer.scraping_round === '4' ||
-          influencer.scraping_round === 3 || influencer.scraping_round === 4) && (
+        {(influencer.scraping_round === '5' || influencer.scraping_round === 5)
+           && (
           <div className="new-badge">NEW</div>
         )}
         {(influencer.r2_thumbnail_url || influencer.local_thumbnail || influencer.thumbnail_url) ? (
