@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { FaHeart, FaRegHeart } from 'react-icons/fa';
+import { FaHeart, FaRegHeart, FaTrash } from 'react-icons/fa';
 import StatusSelector from '../../common/StatusSelector';
 import ContactStatusService from '../../../services/ContactStatusService';
 import LikesService from '../../../services/LikesService';
+import InfluencerService from '../../../services/InfluencerService';
 import useAuthStore from '../../../stores/authStore';
 import { truncateText, formatNumber } from '../../../utils/formatters';
 import { getUserColor } from '../../../utils/userColors';
+import { isDevelopment } from '../../../config/mockUsers';
 
 function InfluencerCard({ influencer, onShowDetail, onShowVideo, onDataUpdate }) {
   const { user } = useAuthStore();
@@ -16,6 +18,7 @@ function InfluencerCard({ influencer, onShowDetail, onShowVideo, onDataUpdate })
     influencer.likes?.users || []
   );
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Update like state when influencer data changes (e.g., when user changes)
   useEffect(() => {
@@ -106,6 +109,39 @@ function InfluencerCard({ influencer, onShowDetail, onShowVideo, onDataUpdate })
     }
   };
 
+  const handleDelete = async (event) => {
+    event.stopPropagation();
+
+    // Only allow deletion in development mode
+    if (!isDevelopment()) {
+      return;
+    }
+
+    // Confirm deletion
+    const confirmMessage = `Are you sure you want to delete "${influencer.author_name || 'this influencer'}"?\n\nThis action cannot be undone.`;
+    if (!window.confirm(confirmMessage)) {
+      return;
+    }
+
+    try {
+      setIsDeleting(true);
+      await InfluencerService.deleteInfluencer(influencer.id);
+
+      // Notify parent component to refresh data
+      if (onDataUpdate) {
+        onDataUpdate();
+      }
+
+      // Show success message
+      alert('Influencer deleted successfully');
+    } catch (error) {
+      console.error('Failed to delete influencer:', error);
+      alert('Failed to delete influencer: ' + (error.message || 'Unknown error'));
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   // Helper to get last 2 characters from name
   const getInitials = (name) => {
     if (!name) return '??';
@@ -170,6 +206,18 @@ function InfluencerCard({ influencer, onShowDetail, onShowVideo, onDataUpdate })
             <FaRegHeart size={30} color="#6b7280" />
           )}
         </button>
+
+        {/* Delete button - only visible in development mode */}
+        {isDevelopment() && (
+          <button
+            className={`delete-btn ${isDeleting ? 'deleting' : ''}`}
+            onClick={handleDelete}
+            title="Delete influencer"
+            disabled={isDeleting}
+          >
+            <FaTrash size={24} color={isDeleting ? "#6b7280" : "#ef4444"} />
+          </button>
+        )}
 
         {/* Display users who liked */}
         {likedByUsers.length > 0 && (

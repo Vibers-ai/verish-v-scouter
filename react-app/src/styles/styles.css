@@ -1431,6 +1431,63 @@ main {
     transform: scale(1) !important;
 }
 
+/* Delete button - only visible in development mode */
+.influencer-card .delete-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid #fca5a5;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    cursor: pointer;
+    margin: 0px 40px 0px 0px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 10;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.15);
+}
+
+.influencer-card .delete-btn:hover {
+    background: #fee2e2 !important;
+    transform: scale(1.1) !important;
+    box-shadow: 0 4px 16px rgba(239, 68, 68, 0.25) !important;
+    border-color: #f87171 !important;
+}
+
+.influencer-card .delete-btn:active {
+    transform: scale(1.05) !important;
+}
+
+.influencer-card .delete-btn svg {
+    display: block !important;
+    pointer-events: none;
+    width: 20px !important;
+    height: 20px !important;
+    min-width: 20px !important;
+    min-height: 20px !important;
+    flex-shrink: 0;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.influencer-card .delete-btn:hover svg {
+    transform: scale(1.1);
+}
+
+.influencer-card .delete-btn.deleting {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: scale(1) !important;
+}
+
+.influencer-card .delete-btn.deleting:hover {
+    background: rgba(255, 255, 255, 0.95) !important;
+    transform: scale(1) !important;
+}
+
 /* Liked by users display */
 .liked-by-users {
     position: absolute;

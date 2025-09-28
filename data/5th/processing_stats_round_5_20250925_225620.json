@@ -1,0 +1,13 @@
+{
+  "total": 1000,
+  "processed": 5,
+  "images_downloaded": 5,
+  "images_uploaded": 5,
+  "db_inserted": 2,
+  "db_updated": 0,
+  "errors": [
+    "DB error for callahanrahm: {'message': 'duplicate key value violates unique constraint \"influencers_account_id_key\"', 'code': '23505', 'hint': None, 'details': None}",
+    "DB error for stephanie.lauer11: {'message': 'duplicate key value violates unique constraint \"influencers_account_id_key\"', 'code': '23505', 'hint': None, 'details': None}",
+    "DB error for jade.amberrrrr: {'message': 'duplicate key value violates unique constraint \"influencers_account_id_key\"', 'code': '23505', 'hint': None, 'details': None}"
+  ]
+}
