@@ -26,6 +26,7 @@ class InfluencerService {
       includeLikes = true,
       likedByUsers = [],
       currentUserEmail = null,
+      company = null,
     } = options;
 
     try {
@@ -85,6 +86,10 @@ class InfluencerService {
 
       if (scrapingRound) {
         query = query.eq('scraping_round', scrapingRound);
+      }
+
+      if (company) {
+        query = query.eq('company', company);
       }
 
       if (followerRange) {
@@ -593,14 +598,33 @@ class InfluencerService {
     }
   }
 
-  async getSummary(influencerType = 'all') {
+  async getSummary(influencerType = 'all', company = null) {
     try {
-      const { data: dataArray, error } = await supabase
-        .from(TABLES.SUMMARY_VIEW)
+      let query = supabase
+        .from('influencer_summary_by_company')
         .select('*')
         .eq('influencer_type', influencerType);
 
-      if (error) throw error;
+      if (company) {
+        query = query.eq('company', company);
+      }
+
+      const { data: dataArray, error } = await query;
+
+      if (error) {
+        console.warn('Company-specific summary not found, falling back to old view:', error);
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from(TABLES.SUMMARY_VIEW)
+          .select('*')
+          .eq('influencer_type', influencerType);
+
+        if (fallbackError) throw fallbackError;
+        if (!fallbackData || fallbackData.length === 0) {
+          return null;
+        }
+        return fallbackData[0];
+      }
+
       if (!dataArray || dataArray.length === 0) {
         return null;
       }
@@ -611,13 +635,30 @@ class InfluencerService {
     }
   }
 
-  async getAllSummaries() {
+  async getAllSummaries(company = null) {
     try {
-      const { data, error } = await supabase
-        .from(TABLES.SUMMARY_VIEW)
-        .select('*');
+      let query = supabase.from('influencer_summary_by_company').select('*');
 
-      if (error) throw error;
+      if (company) {
+        query = query.eq('company', company);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.warn('Company-specific summaries not found, falling back to old view:', error);
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from(TABLES.SUMMARY_VIEW)
+          .select('*');
+
+        if (fallbackError) throw fallbackError;
+
+        const summaries = {};
+        fallbackData.forEach((item) => {
+          summaries[item.influencer_type] = item;
+        });
+        return summaries;
+      }
 
       const summaries = {};
       data.forEach((item) => {
@@ -631,24 +672,48 @@ class InfluencerService {
     }
   }
 
-  async getMaxValues() {
+  async getMaxValues(company = null) {
     try {
-      // Get max follower count
-      const { data: followerDataArray, error: followerError } = await supabase
+      if (company) {
+        const { data, error } = await supabase
+          .rpc('get_company_max_values', { company_name: company });
+
+        if (error) {
+          console.warn('Company-specific RPC failed, using fallback:', error);
+        } else if (data && data.length > 0) {
+          return {
+            maxFollowers: data[0].max_followers || 10000000,
+            maxViews: data[0].max_views || 100000000,
+          };
+        }
+      }
+
+      // Fallback: Get max follower count
+      let followerQuery = supabase
         .from(TABLES.INFLUENCERS)
         .select('follower_count')
         .order('follower_count', { ascending: false })
         .limit(1);
 
+      if (company) {
+        followerQuery = followerQuery.eq('company', company);
+      }
+
+      const { data: followerDataArray, error: followerError } = await followerQuery;
       if (followerError) throw followerError;
 
       // Get max views count
-      const { data: viewsDataArray, error: viewsError } = await supabase
+      let viewsQuery = supabase
         .from(TABLES.INFLUENCERS)
         .select('views_count')
         .order('views_count', { ascending: false })
         .limit(1);
 
+      if (company) {
+        viewsQuery = viewsQuery.eq('company', company);
+      }
+
+      const { data: viewsDataArray, error: viewsError } = await viewsQuery;
       if (viewsError) throw viewsError;
 
       const followerData =
@@ -776,9 +841,30 @@ class InfluencerService {
       supabase.removeChannel(subscription);
     }
   }
-  async getUniqueScrapingRounds() {
+  async getUniqueScrapingRounds(company = null) {
     try {
-      console.log('Fetching unique scraping rounds...');
+      console.log('Fetching unique scraping rounds for company:', company);
+
+      if (company) {
+        const { data, error } = await supabase.rpc(
+          'get_company_scraping_rounds',
+          { company_name: company }
+        );
+
+        if (!error && data && data.length > 0) {
+          const rounds = data.map((item) => item.scraping_round).filter((round) => round != null);
+          console.log('Company-specific scraping rounds found (RPC):', rounds);
+          return rounds.sort((a, b) => {
+            const numA = parseInt(a);
+            const numB = parseInt(b);
+            if (!isNaN(numA) && !isNaN(numB)) {
+              return numA - numB;
+            }
+            return a.localeCompare(b);
+          });
+        }
+        console.warn('Company-specific RPC failed or returned no data, using fallback');
+      }
 
       // Use RPC to get distinct values efficiently
       const { data, error } = await supabase.rpc(
@@ -796,11 +882,18 @@ class InfluencerService {
         let hasMore = true;
 
         while (hasMore) {
-          const { data: fallbackData, error: fallbackError } = await supabase
+          let fallbackQuery = supabase
             .from(TABLES.INFLUENCERS)
             .select('scraping_round')
-            .not('scraping_round', 'is', null)
-            .range(page * pageSize, (page + 1) * pageSize - 1);
+            .not('scraping_round', 'is', null);
+
+          if (company) {
+            fallbackQuery = fallbackQuery.eq('company', company);
+          }
+
+          fallbackQuery = fallbackQuery.range(page * pageSize, (page + 1) * pageSize - 1);
+
+          const { data: fallbackData, error: fallbackError } = await fallbackQuery;
 
           if (fallbackError) {
             console.error('Fallback failed on page', page, ':', fallbackError);

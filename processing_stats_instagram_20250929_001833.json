@@ -1,0 +1,17 @@
+{
+  "total_reels": 31,
+  "total_profiles": 27,
+  "matched_profiles": 26,
+  "processed": 31,
+  "images_downloaded": 0,
+  "images_uploaded": 31,
+  "db_inserted": 31,
+  "errors": [],
+  "missing_profiles": [
+    "ddpshowroom_official",
+    "vivid_homegarden",
+    "woorizipac",
+    "rihazz___k",
+    "itzon_apparel_kr"
+  ]
+}

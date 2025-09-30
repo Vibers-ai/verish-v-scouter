@@ -1,0 +1,15 @@
+{
+  "total_reels": 31,
+  "total_profiles": 27,
+  "matched_profiles": 3,
+  "processed": 3,
+  "images_downloaded": 3,
+  "images_uploaded": 3,
+  "db_inserted": 0,
+  "errors": [
+    "DB error for jinihada: {'message': 'value too long for type character varying(500)', 'code': '22001', 'hint': None, 'details': None}",
+    "DB error for hjj_starry__cos: {'message': 'value too long for type character varying(500)', 'code': '22001', 'hint': None, 'details': None}",
+    "DB error for _mingk: {'message': 'value too long for type character varying(500)', 'code': '22001', 'hint': None, 'details': None}"
+  ],
+  "missing_profiles": []
+}

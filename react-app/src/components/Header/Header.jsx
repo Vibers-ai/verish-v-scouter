@@ -13,19 +13,34 @@ function Header({ summary }) {
     window.location.href = 'https://maestro.vibers-ai.dev/login';
   };
 
+  const getCompanyLogo = () => {
+    const company = user?.company?.toLowerCase();
+
+    const logos = {
+      'verish': 'https://pub-6d1bd4ca2c16406c9117f784243ac29e.r2.dev/company-logos/2.svg',
+      'seedlab': 'https://pub-6d1bd4ca2c16406c9117f784243ac29e.r2.dev/company-logos/7.png'
+    };
+
+    return logos[company] || '/verish_logo.svg';
+  };
+
+  const getCompanyName = () => {
+    return user?.company || 'Verish';
+  };
+
   return (
     <header>
       <div className="header-container">
         <div className="header-title">
-          <img src="/verish_logo.svg" alt="Verish" className="logo" />
+          <img src={getCompanyLogo()} alt={getCompanyName()} className="logo" />
           <h1>인플루언서 데이터 대시보드</h1>
         </div>
 
         {user && (
           <div className="user-info">
             <div className="user-details">
-              <span className="user-name">{user.email}</span>
-              <span className="user-company">{user.name}</span>
+              <span className="user-name">{user.name}</span>
+              <span className="user-company">{user.company} · {user.email}</span>
             </div>
             <button
               onClick={handleLogout}

@@ -300,6 +300,37 @@ button:disabled {
     border-color: #1a1a1a;
 }
 
+/* Excel Export Button */
+.export-btn {
+    background: #10B981;
+    color: white;
+    border: 1px solid #10B981;
+    padding: 8px 14px;
+    font-size: 13px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    transition: all 0.2s ease;
+    font-weight: 500;
+}
+
+.export-btn:hover:not(:disabled) {
+    background: #059669;
+    border-color: #059669;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.export-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.export-btn:active:not(:disabled) {
+    transform: translateY(0);
+}
+
 .sort-section, .filter-section {
     display: flex;
     align-items: center;
