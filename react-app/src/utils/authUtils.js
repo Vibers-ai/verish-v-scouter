@@ -69,6 +69,16 @@ export const authUtils = {
     localStorage.removeItem(TOKEN_EXPIRY_KEY);
   },
 
+  // Normalize user data from SSO (map company_name to company and lowercase)
+  normalizeUserData(userData) {
+    if (userData && userData.company_name && !userData.company) {
+      userData.company = userData.company_name.toLowerCase();
+    } else if (userData && userData.company) {
+      userData.company = userData.company.toLowerCase();
+    }
+    return userData;
+  },
+
   // Exchange authorization code for access token
   async exchangeCodeForToken(code, maestroUrl, redirectUri) {
     try {
@@ -90,6 +100,7 @@ export const authUtils = {
       }
 
       const tokenData = await response.json();
+      tokenData.user = this.normalizeUserData(tokenData.user);
       return tokenData;
     } catch (error) {
       console.error('Error exchanging code for token:', error);
@@ -139,7 +150,7 @@ export const authUtils = {
       }
 
       const userData = await response.json();
-      return userData;
+      return this.normalizeUserData(userData);
     } catch (error) {
       console.error('Error fetching user info:', error);
       throw error;

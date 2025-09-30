@@ -69,7 +69,7 @@ function InfluencerCard({ influencer, onShowDetail, onShowVideo, onDataUpdate })
   const handleShowVideo = (url, event) => {
     event.preventDefault();
     event.stopPropagation();
-    onShowVideo(url);
+    onShowVideo(url, influencer.platform);
   };
 
   const handleToggleLike = async (event) => {
@@ -112,8 +112,9 @@ function InfluencerCard({ influencer, onShowDetail, onShowVideo, onDataUpdate })
   const handleDelete = async (event) => {
     event.stopPropagation();
 
-    // Only allow deletion in development mode
-    if (!isDevelopment()) {
+    // Only allow deletion in development mode or for admin user
+    const isAdminUser = user?.email === 'verish-admin@deep-dive.kr';
+    if (!isDevelopment() && !isAdminUser) {
       return;
     }
 
@@ -167,7 +168,7 @@ function InfluencerCard({ influencer, onShowDetail, onShowVideo, onDataUpdate })
         onClick={(e) => influencer.video_url && handleShowVideo(influencer.video_url, e)}
         style={{ cursor: influencer.video_url ? 'pointer' : 'default', position: 'relative' }}
       >
-        {(influencer.scraping_round === '5' || influencer.scraping_round === 5)
+        {(influencer.scraping_round === '6' || influencer.scraping_round === 6)
            && (
           <div className="new-badge">NEW</div>
         )}
@@ -207,8 +208,8 @@ function InfluencerCard({ influencer, onShowDetail, onShowVideo, onDataUpdate })
           )}
         </button>
 
-        {/* Delete button - only visible in development mode */}
-        {isDevelopment() && (
+        {/* Delete button - only visible in development mode or for admin user */}
+        {(isDevelopment() || user?.email === 'verish-admin@deep-dive.kr') && (
           <button
             className={`delete-btn ${isDeleting ? 'deleting' : ''}`}
             onClick={handleDelete}

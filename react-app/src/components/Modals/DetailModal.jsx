@@ -48,7 +48,7 @@ function DetailModal({ influencer, isOpen, onClose, onShowVideo }) {
   const handleShowVideo = (url, event) => {
     event.preventDefault();
     event.stopPropagation();
-    onShowVideo(url);
+    onShowVideo(url, influencer.platform);
   };
 
   return (
@@ -186,7 +186,7 @@ function DetailModal({ influencer, isOpen, onClose, onShowVideo }) {
                   rel="noopener noreferrer"
                   className="btn-primary btn-secondary"
                 >
-                  TikTok에서 열기
+                  {influencer.platform === 'instagram' ? 'Instagram에서 열기' : 'TikTok에서 열기'}
                 </a>
               </div>
             )}

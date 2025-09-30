@@ -15,6 +15,7 @@ import TagsService from './services/TagsService';
 import ContactStatusService from './services/ContactStatusService';
 import InfluencerService from './services/InfluencerService';
 import LikesService from './services/LikesService';
+import ExcelExportService from './services/ExcelExportService';
 import useAuthStore from './stores/authStore';
 import { isDevelopment } from './config/mockUsers';
 import { assignColorsToUsers } from './utils/userColors';
@@ -57,21 +58,23 @@ function App() {
   // Modal states
   const [selectedInfluencer, setSelectedInfluencer] = useState(null);
   const [videoUrl, setVideoUrl] = useState(null);
+  const [videoPlatform, setVideoPlatform] = useState(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
 
   // Contact status and tags states (for triggering re-renders)
   const [, forceUpdate] = useState(0);
 
-  // Load data on mount
+  // Load data on mount and when user changes
   useEffect(() => {
     fetchMaxValues();
-  }, []);
+  }, [user]);
 
   // Fetch absolute max values once
   const fetchMaxValues = async () => {
     try {
-      const maxValues = await InfluencerService.getMaxValues();
+      const userCompany = user?.company || null;
+      const maxValues = await InfluencerService.getMaxValues(userCompany);
       if (maxValues) {
         setAbsoluteMaxFollowers(maxValues.maxFollowers || 10000000);
         setAbsoluteMaxViews(maxValues.maxViews || 100000000);
@@ -90,6 +93,7 @@ function App() {
       setIsLoading(true);
 
       // Load from Supabase
+      const userCompany = user?.company || null;
       const options = {
         page: currentPage,
         pageSize: itemsPerPage === 'all' ? 1000 : itemsPerPage,
@@ -106,17 +110,18 @@ function App() {
         includeContactStatus: true,
         includeLikes: true,
         likedByUsers: likedByUsers,
-        currentUserEmail: user?.email
+        currentUserEmail: user?.email,
+        company: userCompany
       };
 
-      console.log('Loading data with viewMode:', viewMode, 'saved filter:', viewMode === 'saved' ? true : null);
+      console.log('Loading data with viewMode:', viewMode, 'saved filter:', viewMode === 'saved' ? true : null, 'company:', userCompany);
 
       const result = await InfluencerService.getInfluencers(options);
-      const summaries = await InfluencerService.getAllSummaries();
+      const summaries = await InfluencerService.getAllSummaries(userCompany);
 
       // Get all unique scraping rounds (without filters) for dropdown
       console.log('Fetching unique scraping rounds from App...');
-      const allRoundsResult = await InfluencerService.getUniqueScrapingRounds();
+      const allRoundsResult = await InfluencerService.getUniqueScrapingRounds(userCompany);
       console.log('Received rounds in App:', allRoundsResult);
 
       setAllData(result.data);
@@ -236,8 +241,9 @@ function App() {
     setIsDetailModalOpen(true);
   }, []);
 
-  const handleShowVideo = useCallback((url) => {
+  const handleShowVideo = useCallback((url, platform) => {
     setVideoUrl(url);
+    setVideoPlatform(platform);
     setIsVideoModalOpen(true);
   }, []);
 
@@ -249,6 +255,7 @@ function App() {
   const handleCloseVideoModal = useCallback(() => {
     setIsVideoModalOpen(false);
     setVideoUrl(null);
+    setVideoPlatform(null);
   }, []);
 
   // Force update when contact status or tags change
@@ -256,6 +263,53 @@ function App() {
     forceUpdate(prev => prev + 1);
     loadData(); // Reload data to reflect changes
   }, [loadData]);
+
+  // Handle Excel export for liked influencers
+  const handleExportToExcel = useCallback(async () => {
+    try {
+      setIsLoading(true);
+
+      // Get all liked influencers data (not just paginated)
+      const exportData = allData.filter(influencer => {
+        // If users are selected, filter by them
+        if (likedByUsers.length > 0) {
+          const userEmails = likedByUsers.map(u => u.email);
+          return influencer.likes?.users?.some(user =>
+            userEmails.includes(user.email)
+          );
+        }
+        // Otherwise, include all liked influencers
+        return influencer.likes?.users?.length > 0;
+      });
+
+      if (exportData.length === 0) {
+        alert('내보낼 데이터가 없습니다.');
+        setIsLoading(false);
+        return;
+      }
+
+      const result = await ExcelExportService.exportLikedInfluencers(
+        exportData,
+        likedByUsers,
+        {
+          searchTerm,
+          influencerType: currentTypeFilter,
+          scrapingRound: scrapingRoundFilter
+        }
+      );
+
+      if (result.success) {
+        console.log(`Successfully exported ${exportData.length} influencers`);
+      } else {
+        alert('Excel 내보내기 실패: ' + result.message);
+      }
+    } catch (error) {
+      console.error('Export error:', error);
+      alert('Excel 내보내기 중 오류가 발생했습니다.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [allData, likedByUsers, searchTerm, currentTypeFilter, scrapingRoundFilter]);
 
   // Handle view mode change (all/saved)
   const handleViewModeChange = useCallback((mode) => {
@@ -331,12 +385,22 @@ function App() {
 
             <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
               {viewMode === 'saved' && (
-                <div className="liked-by-filter-inline">
-                  <LikedByFilter
-                    selectedUsers={likedByUsers}
-                    onUsersChange={setLikedByUsers}
-                  />
-                </div>
+                <>
+                  <div className="liked-by-filter-inline">
+                    <LikedByFilter
+                      selectedUsers={likedByUsers}
+                      onUsersChange={setLikedByUsers}
+                    />
+                  </div>
+                  <button
+                    className="export-btn"
+                    onClick={handleExportToExcel}
+                    disabled={isLoading || totalCount === 0}
+                    title="Excel로 내보내기"
+                  >
+                    Excel 내보내기
+                  </button>
+                </>
               )}
 
               <div className="items-per-page">
@@ -409,6 +473,7 @@ function App() {
           {isVideoModalOpen && (
             <VideoModal
               videoUrl={videoUrl}
+              platform={videoPlatform}
               isOpen={isVideoModalOpen}
               onClose={handleCloseVideoModal}
             />

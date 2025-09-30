@@ -4,33 +4,33 @@
 export const MOCK_USERS = [
   {
     id: 'user-1',
+    email: 'admin@verish.com',
+    name: 'Verish Admin',
+    company: 'verish'
+  },
+  {
+    id: 'user-2',
+    email: 'admin@seedlab.com',
+    name: 'Seedlab Admin',
+    company: 'seedlab'
+  },
+  {
+    id: 'user-3',
     email: 'sy.lee@deep-dive.kr',
     name: '이소영',
     company: 'Deep Dive'
   },
   {
-    id: 'user-2',
+    id: 'user-4',
     email: 'john.kim@vibers.ai',
     name: '김영수',
     company: 'Vibers AI'
   },
   {
-    id: 'user-3',
-    email: 'sarah.park@example.com',
-    name: '박사라',
-    company: 'Example Corp'
-  },
-  {
-    id: 'user-4',
-    email: 'mike.jung@test.com',
-    name: '정마이클',
-    company: 'Test Company'
-  },
-  {
     id: 'user-5',
-    email: 'admin@vibers.ai',
-    name: 'Admin',
-    company: 'Vibers AI'
+    email: 'admin@example.com',
+    name: 'Example User',
+    company: 'Example Corp'
   }
 ];
 
